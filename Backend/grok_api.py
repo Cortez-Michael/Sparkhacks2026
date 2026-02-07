@@ -9,7 +9,7 @@ load_dotenv()
 api_key = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
-# Encode image to base64
+# Encode image to base64, for processing by Groq
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode('utf-8')
