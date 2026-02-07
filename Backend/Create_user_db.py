@@ -2,7 +2,6 @@ import sqlite3
 
 def get_db_connection():
     conn = sqlite3.connect("User_database.db")
-    conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 def init_db():
@@ -10,28 +9,12 @@ def init_db():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-
+        
         cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            first_name TEXT NOT NULL
-        );
-        """)
-
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS ingredients (
+        CREATE TABLE IF NOT EXISTS pantry (
             ingredient_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL
-        );
-        """)
-
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS user_ingredients (
-            user_id INTEGER,
-            ingredient_id INTEGER,
-            FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-            FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id) ON DELETE CASCADE,
-            PRIMARY KEY (user_id, ingredient_id)
+            name TEXT UNIQUE NOT NULL,
+            quantity TEXT NOT NULL
         );
         """)
 
