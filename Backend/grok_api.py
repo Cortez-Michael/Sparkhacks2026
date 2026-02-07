@@ -36,7 +36,7 @@ if __name__ == "__main__":
         first_arg = sys.argv[1]
     else:
         print("Error: Please provide an argument.")
-        print(f"Usage: python {sys.argv[0]} <your_argument>")
+        print(f"Usage: python {sys.argv[0]} <your_image_path>")
         sys.exit(1) 
 
     analyze_groq(first_arg)
