@@ -17,10 +17,14 @@ def encode_image(image_path):
         return base64.b64encode(image_file.read()).decode('utf-8')
 
 # Using Groq API look at receipt image and extract grocery items into a simplified JSON list
-def parse_receipt_with_groq(image_path):
-    print(f"Uploading {image_path} to Groq...")
-    
-    base64_image = encode_image(image_path)
+def parse_receipt_with_groq(image_path_or_bytes):
+    """Accept either a file path (str) or image bytes (bytes) from API uploads."""
+    if isinstance(image_path_or_bytes, bytes):
+        base64_image = base64.b64encode(image_path_or_bytes).decode("utf-8")
+        print("Uploading image bytes to Groq...")
+    else:
+        print(f"Uploading {image_path_or_bytes} to Groq...")
+        base64_image = encode_image(image_path_or_bytes)
 
     try:
         completion = client.chat.completions.create(

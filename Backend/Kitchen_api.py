@@ -2,11 +2,19 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from groq import Groq
 from pydantic import BaseModel
-from typing import List
-import base64
-import json
+from typing import List, Optional
+
+
+class ItemEntry(BaseModel):
+    item: str
+    quantity: Optional[int] = 1
+
+
+class ItemList(BaseModel):
+    items: List[ItemEntry]
+
+
 import os
-import grok_api
 import Groq_receipt_reader
 from dotenv import load_dotenv
 
@@ -25,9 +33,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class ItemList(BaseModel):
-    items: List[str]  
-
 @app.post("/scan-receipt/")
 async def scan_receipt(file: UploadFile = File(...)):
     image_bytes = await file.read()
@@ -45,4 +50,5 @@ async def scan_receipt(file: UploadFile = File(...)):
 @app.post("/send-list/")
 async def send_list(data: ItemList):
     print(f"Received {len(data.items)} items")
-    return {"message": "List received", "first_item": data.items[0]}
+    names = [e.item for e in data.items]
+    return {"message": "List received", "count": len(data.items), "items": names}
