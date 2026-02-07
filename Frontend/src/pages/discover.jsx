@@ -1,5 +1,7 @@
-import { useState } from "react"
-import { Camera, Clock, Flame, DollarSign, Dumbbell, Sparkles, X, ShoppingBag } from "lucide-react"
+import { useState, useRef, useEffect } from "react"
+import { Camera, Clock, Flame, DollarSign, Dumbbell, Sparkles, X, ShoppingBag, Send, MessageCircle } from "lucide-react"
+
+const API_BASE = "http://127.0.0.1:8000"
 
 const vibes = [
   { id: "quick", label: "Quick & Easy", icon: <Clock className="h-3.5 w-3.5" /> },
@@ -59,9 +61,56 @@ const recipes = [
   },
 ]
 
+const INITIAL_MESSAGE = {
+  role: "assistant",
+  content: "Hey! What are you feeling today? Tell me what you’re in the mood for—cozy comfort food, something light and fresh, or anything else—and I’ll help you find the right meal.",
+}
+
 export default function Discover() {
   const [activeVibe, setActiveVibe] = useState("quick")
   const [selectedRecipe, setSelectedRecipe] = useState(null)
+  const [messages, setMessages] = useState([INITIAL_MESSAGE])
+  const [inputText, setInputText] = useState("")
+  const [chatLoading, setChatLoading] = useState(false)
+  const [chatOpen, setChatOpen] = useState(true)
+  const messagesContainerRef = useRef(null)
+
+  useEffect(() => {
+    const el = messagesContainerRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [messages])
+
+  const sendMessage = async () => {
+    const text = (inputText || "").trim()
+    if (!text || chatLoading) return
+    setInputText("")
+    const userMsg = { role: "user", content: text }
+    setMessages((prev) => [...prev, userMsg])
+    setChatLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/generate-response/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data.response) {
+        setMessages((prev) => [...prev, { role: "assistant", content: data.response }])
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: data.error || "Sorry, something went wrong. Try again in a moment." },
+        ])
+      }
+    } catch (_) {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "Couldn’t reach the server. Check your connection." },
+      ])
+    } finally {
+      setChatLoading(false)
+    }
+  }
 
   const fridgeRecipes = recipes.filter((r) => r.canMakeNow)
   const otherRecipes = recipes.filter((r) => !r.canMakeNow)
@@ -73,6 +122,118 @@ export default function Discover() {
       <div style={{ marginBottom: '1.5rem' }}>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.25rem' }}>Magic Chef</h1>
         <p style={{ fontSize: '0.875rem', color: '#666' }}>AI-powered recipe discovery</p>
+      </div>
+
+      {/* Groq Chatbox */}
+      <div style={{
+        borderRadius: '1rem',
+        backgroundColor: '#f8f9fa',
+        border: '1px solid #e9ecef',
+        marginBottom: '1.5rem',
+        overflow: 'hidden'
+      }}>
+        <button
+          onClick={() => setChatOpen((o) => !o)}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.875rem 1rem',
+            background: 'linear-gradient(135deg, #8B7355 0%, #6f5a44 100%)',
+            color: '#fff',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '0.9375rem',
+            fontWeight: '600'
+          }}
+        >
+          <MessageCircle style={{ width: '1.25rem', height: '1.25rem' }} />
+          What are you feeling today?
+          <span style={{ marginLeft: 'auto', opacity: 0.8 }}>{chatOpen ? '▼' : '▶'}</span>
+        </button>
+        {chatOpen && (
+          <>
+            <div
+              ref={messagesContainerRef}
+              style={{
+                maxHeight: '260px',
+                overflowY: 'auto',
+                padding: '1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem'
+              }}
+            >
+              {messages.map((msg, i) => (
+                <div
+                  key={i}
+                  style={{
+                    alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                    maxWidth: '85%',
+                    padding: '0.625rem 0.875rem',
+                    borderRadius: msg.role === 'user' ? '1rem 1rem 0.25rem 1rem' : '1rem 1rem 1rem 0.25rem',
+                    backgroundColor: msg.role === 'user' ? '#8B7355' : '#fff',
+                    color: msg.role === 'user' ? '#fff' : '#333',
+                    fontSize: '0.875rem',
+                    lineHeight: 1.4,
+                    boxShadow: msg.role === 'assistant' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none'
+                  }}
+                >
+                  {msg.content}
+                </div>
+              ))}
+              {chatLoading && (
+                <div style={{
+                  alignSelf: 'flex-start',
+                  padding: '0.625rem 0.875rem',
+                  borderRadius: '1rem 1rem 1rem 0.25rem',
+                  backgroundColor: '#fff',
+                  fontSize: '0.875rem',
+                  color: '#666'
+                }}>
+                  Thinking…
+                </div>
+              )}
+            </div>
+            <div style={{
+              display: 'flex',
+              gap: '0.5rem',
+              padding: '0.75rem 1rem',
+              borderTop: '1px solid #e9ecef'
+            }}>
+              <input
+                type="text"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                placeholder="e.g. something cozy and comforting…"
+                disabled={chatLoading}
+                style={{
+                  flex: 1,
+                  padding: '0.625rem 0.875rem',
+                  borderRadius: '0.75rem',
+                  border: '1px solid #dee2e6',
+                  fontSize: '0.875rem'
+                }}
+              />
+              <button
+                onClick={sendMessage}
+                disabled={chatLoading || !inputText.trim()}
+                style={{
+                  padding: '0.625rem 1rem',
+                  borderRadius: '0.75rem',
+                  backgroundColor: inputText.trim() && !chatLoading ? '#8B7355' : '#ced4da',
+                  color: '#fff',
+                  border: 'none',
+                  cursor: inputText.trim() && !chatLoading ? 'pointer' : 'not-allowed'
+                }}
+              >
+                <Send style={{ width: '1.125rem', height: '1.125rem' }} />
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Vibe Toggle */}

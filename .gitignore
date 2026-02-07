@@ -2,4 +2,4 @@ echo "node_modules/
    dist/
    .env
    .DS_Store" > .gitignore
-   venv
+   .venv
