@@ -90,18 +90,20 @@ export default function Scanner() {
   };
 
   const confirmAndSend = async () => {
+    // 1. Filter out empty items (This is correct)
     const valid = items.filter((i) => (i.item || "").trim());
+
     if (valid.length === 0) {
       setError("Add at least one item with a name.");
       return;
     }
-    setLoading(true);
-    setError(null);
-    setConfirmSuccess(null);
+    
+
     try {
       const res = await fetch(`${API_BASE}/send-list/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        
         body: JSON.stringify({ items: valid }),
       });
       const data = await res.json().catch(() => ({}));
